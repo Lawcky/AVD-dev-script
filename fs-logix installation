@@ -1,0 +1,12 @@
+# INSTALL FSLOGIX
+
+write-output "Installing fslogix"
+$client = New-Object System.Net.WebClient
+$url = "https://aka.ms/fslogix_download"
+$client.DownloadFile($url, "$PSScriptRoot\fslogix.zip")
+
+Expand-Archive -LiteralPath "$PSScriptRoot\fslogix.zip" -DestinationPath $PSScriptRoot\fslogix
+
+Start-Process -FilePath "$PSScriptRoot\fslogix\x64\Release\FSLogixAppsSetup.exe" -ArgumentList ("/install /quiet /norestart") -Wait
+
+write-output "Installation finished"
