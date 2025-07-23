@@ -1,0 +1,50 @@
+# ici les valeurs à changer, le $user et $fileServer doivent avoir le nom du compte de stockage à la place de "avdfslogixvanves" et le secret est une des clés pour le compte de stockage
+$user="localhost\avdfslogixvanves"
+$fileServer="avdfslogixvanves.file.core.windows.net"
+$secret="{{TOKEN azure pour le compte de stockage}}"
+$profileShare="\\$($fileServer)\profiles"
+
+
+# les clés de registres pour la conf fslogix
+# CONF FSLOGIX POUR LE CLIENT
+New-Item -Path "HKLM:\SOFTWARE" -Name "FSLogix" -ErrorAction Ignore
+New-Item -Path "HKLM:\SOFTWARE\FSLogix" -Name "Profiles" -ErrorAction Ignore
+New-ItemProperty -Path "HKLM:\SOFTWARE\FSLogix\Profiles" -Name "Enabled" -Value 1 -force
+New-ItemProperty -Path "HKLM:\SOFTWARE\FSLogix\Profiles" -Name "VHDLocations" -Value $profileShare -force
+New-ItemProperty -Path "HKLM:\SOFTWARE\FSLogix\Profiles" -Name "ConcurrentUserSessions" -Value 1 -force
+New-ItemProperty -Path "HKLM:\SOFTWARE\FSLogix\Profiles" -Name "DeleteLocalProfileWhenVHDShouldApply" -Value 1 -force
+New-ItemProperty -Path "HKLM:\SOFTWARE\FSLogix\Profiles" -Name "FlipFlopProfileDirectoryName" -Value 1 -force
+New-ItemProperty -Path "HKLM:\SOFTWARE\FSLogix\Profiles" -Name "IsDynamic" -Value 1 -force
+New-ItemProperty -Path "HKLM:\SOFTWARE\FSLogix\Profiles" -Name "KeepLocalDir" -Value 0 -force
+New-ItemProperty -Path "HKLM:\SOFTWARE\FSLogix\Profiles" -Name "ProfileType" -Value 0 -force
+New-ItemProperty -Path "HKLM:\SOFTWARE\FSLogix\Profiles" -Name "SizeInMBs" -Value 40000 -force
+New-ItemProperty -Path "HKLM:\SOFTWARE\FSLogix\Profiles" -Name "VolumeType" -Value "VHDX" -force
+New-ItemProperty -Path "HKLM:\SOFTWARE\FSLogix\Profiles" -Name "AccessNetworkAsComputerObject" -Value 1 -force
+# Include credentials in the profile
+New-Item -Path "HKLM:\Software\Policies\Microsoft" -Name "AzureADAccount" -ErrorAction Ignore
+New-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\AzureADAccount" -Name "LoadCredKeyFromProfile" -Value 1 -force
+# Disable Windows Defender Credential Guard (only needed for Windows 11 22H2)
+New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name "LsaCfgFlags" -Value 0 -force
+
+
+# Store credentials to access the storage account
+$fslogixCMD = "cmdkey.exe /add:$fileServer /user:$($user) /pass:$($secret)"
+write-host $fslogixCMD
+
+
+# ici si vous voulez monter le disque en plus, (ne marche que si l'utilisateur execute la commande suivante)
+#cmdkey.exe /add:$fileServer /user:$($user) /pass:$($secret)
+#New-PSDrive -Name Z -PSProvider FileSystem -Root "\\avdfslogixvanves.file.core.windows.net\profiles" -Persist #this fails for now
+
+
+# execution d'une GPO pour que le script fonctionne (el famoso fix temporaire permanent)
+#New-Item -Path "C:\\Windows\System32\GroupPolicy\Machine\Scripts\Startup\" -ItemType Directory -Force
+#Set-Content -Path "C:\\Windows\System32\GroupPolicy\Machine\Scripts\Startup\start.ps1" -Value $fslogixCMD
+#write-host "The script has finished."
+
+
+# Recuperation du GPO zip (une fois préparé avec le $fslogixCMD plus haut)
+$tempfolder = [System.Environment]::GetEnvironmentVariable('TEMP','Machine')
+Invoke-Webrequest -URI "{{URI SECURE pour le zip}}" -OutFile "$tempfolder\GroupPolicy.zip"
+
+Expand-Archive -LiteralPath "$tempfolder\GroupPolicy.zip" -DestinationPath "C:\\Windows\System32\"
