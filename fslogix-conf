@@ -45,6 +45,11 @@ write-host $fslogixCMD
 
 # Recuperation du GPO zip (une fois préparé avec le $fslogixCMD plus haut)
 $tempfolder = [System.Environment]::GetEnvironmentVariable('TEMP','Machine')
-Invoke-Webrequest -URI "{{URI SECURE pour le zip}}" -OutFile "$tempfolder\GroupPolicy.zip"
+$zipPath = "$tempfolder\GroupPolicy.zip"
+
+$client = New-Object System.Net.WebClient
+$url = "URI pour le zip du GPO"
+$client.DownloadFile($url, $zipPath)
+
 
 Expand-Archive -LiteralPath "$tempfolder\GroupPolicy.zip" -DestinationPath "C:\\Windows\System32\"
