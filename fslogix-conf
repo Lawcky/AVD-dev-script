@@ -52,4 +52,4 @@ $url = "URI pour le zip du GPO"
 $client.DownloadFile($url, $zipPath)
 
 
-Expand-Archive -LiteralPath "$tempfolder\GroupPolicy.zip" -DestinationPath "C:\\Windows\System32\"
+Expand-Archive -LiteralPath $zipPath -DestinationPath "C:\\Windows\System32\"
